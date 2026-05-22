@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#1a2e1a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Prod OCP"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>Saisie Production — OCP</title>
+  <style>
+    :root{
+      --green:#1a2e1a;--green-mid:#2d5a2d;--green-light:#4a8c4a;
+      --red-dark:#4a1a1a;--red-mid:#8c2d2d;--red:#b83232;--red-pale:#fceaea;
+      --amber:#d4860f;--amber-pale:#fdf3e0;
+      --bg:#f4f4f2;--white:#fff;--border:#e0e0e0;
+      --text:#1a1a1a;--muted:#666;--radius:12px;--radius-sm:8px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+
+    /* HEADER */
+    .header{background:var(--green);color:white;padding:14px 20px 0;}
+    .header h1{font-size:17px;font-weight:700;}
+    .header p{font-size:11px;opacity:0.6;margin-top:2px;}
+    .tabs{display:flex;margin-top:10px;border-top:1px solid rgba(255,255,255,0.12);}
+    .tab{flex:1;padding:10px 0 8px;text-align:center;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;border-bottom:2px solid transparent;font-weight:600;transition:all 0.15s;}
+    .tab.active{color:white;border-bottom-color:#4ade80;}
+    .tab.arret-tab.active{border-bottom-color:#ff8080;}
+
+    .offline-bar{display:none;background:var(--amber);color:white;text-align:center;padding:8px;font-size:13px;font-weight:600;}
+    .content{padding:16px;}
+    .section{display:none;}.section.active{display:block;}
+
+    /* CARDS */
+    .card{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);}
+    .card.arret-card-form{border-top:3px solid var(--red);}
+    .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
+    .form-group{margin-bottom:14px;}
+    .form-group:last-child{margin-bottom:0;}
+    .form-label{font-size:13px;font-weight:600;margin-bottom:6px;display:block;}
+    .form-hint{font-size:11px;color:var(--muted);margin-bottom:6px;}
+    select,input[type=number],input[type=text]{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;background:var(--white);color:var(--text);-webkit-appearance:none;font-family:inherit;}
+    select:focus,input:focus{outline:none;border-color:var(--green-light);}
+    select:disabled{opacity:0.4;cursor:not-allowed;}
+
+    /* TOTALISATEURS */
+    .tot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .tot-box{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;background:#fafaf8;}
+    .tot-box-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;}
+    .tot-box input{border:none;background:transparent;padding:0;font-size:15px;font-weight:600;width:100%;font-family:inherit;}
+    .tot-box input:focus{outline:none;}
+    .tot-box.j{border-color:var(--green-light);background:#f0f7f0;}
+    .tot-box.j .tot-box-label{color:var(--green-mid);}
+    .debit-result{border-radius:var(--radius-sm);padding:12px 14px;margin-top:4px;display:none;}
+    .debit-result.lav{background:#e8f5e8;border:1.5px solid #b8ddb8;}
+    .debit-result.sec{background:var(--amber-pale);border:1.5px solid #f0d08a;}
+    .debit-result-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;}
+    .debit-result.lav .debit-result-label{color:var(--green-mid);}
+    .debit-result.sec .debit-result-label{color:#7a4d08;}
+    .debit-val{font-size:28px;font-weight:700;line-height:1;}
+    .debit-result.lav .debit-val{color:var(--green-mid);}
+    .debit-result.sec .debit-val{color:var(--amber);}
+    .debit-unit{font-size:12px;margin-top:2px;color:var(--muted);}
+    .debit-error{background:var(--red-pale);border:1.5px solid #f0b0b0;border-radius:var(--radius-sm);padding:10px 14px;margin-top:4px;font-size:13px;color:var(--red);font-weight:600;display:none;}
+
+    /* LIGNES */
+    .ligne-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .ligne-btn{padding:12px 4px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--border);text-align:center;background:var(--white);color:var(--muted);transition:all 0.15s;}
+    .ligne-btn.on{background:var(--green-mid);color:white;border-color:var(--green-mid);}
+    .ligne-btn.off{background:var(--red-pale);color:var(--red);border-color:#f0b0b0;}
+    .lignes-count{font-size:20px;font-weight:700;color:var(--green-mid);text-align:center;margin-bottom:4px;}
+    .lignes-label{font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px;}
+
+    /* HEURES ARRET */
+    .heure-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .heure-box{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;}
+    .heure-box-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:6px;}
+    .heure-box input{border:none;background:transparent;padding:0;font-size:16px;font-weight:600;width:100%;font-family:inherit;}
+    .heure-box input:focus{outline:none;}
+    .heure-box.debut{border-color:var(--red);background:#fff5f5;}
+    .heure-box.debut .heure-box-label{color:var(--red);}
+    .heure-box.fin{border-color:var(--green-light);background:#f0f7f0;}
+    .heure-box.fin .heure-box-label{color:var(--green-mid);}
+    .heure-hint{font-size:11px;color:var(--muted);margin-top:6px;font-style:italic;}
+    .duree-preview{border-radius:var(--radius-sm);padding:10px 14px;margin-top:8px;font-size:14px;font-weight:700;text-align:center;display:none;}
+    .duree-preview.en-cours{background:var(--red-pale);color:var(--red);}
+    .duree-preview.termine{background:#e8f5e8;color:var(--green-mid);}
+
+    /* BOUTONS */
+    .btn-submit{width:100%;padding:15px;color:white;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;transition:background 0.15s;margin-top:4px;}
+    .btn-submit.prod{background:var(--green-mid);}
+    .btn-submit.prod:active{background:var(--green);}
+    .btn-submit.arret{background:var(--red-mid);}
+    .btn-submit.arret:active{background:var(--red-dark);}
+    .btn-submit:disabled{background:#aaa;cursor:not-allowed;}
+    .btn-cancel{width:100%;padding:12px;background:none;color:var(--muted);border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;}
+    .edit-banner{background:var(--amber-pale);border:1.5px solid #f0c87a;border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:none;}
+    .edit-banner-title{font-size:13px;font-weight:700;color:#7a4d08;}
+    .edit-banner-sub{font-size:12px;color:#9a6010;margin-top:3px;}
+
+    /* HISTORIQUE */
+    .hist-tabs{display:flex;gap:8px;margin-bottom:14px;}
+    .hist-tab{flex:1;padding:8px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1.5px solid var(--border);background:var(--white);cursor:pointer;text-align:center;color:var(--muted);}
+    .hist-tab.active{background:var(--green);color:white;border-color:var(--green);}
+    .hist-tab.arret-tab.active{background:var(--red-mid);color:white;border-color:var(--red-mid);}
+
+    .filter-row{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;}
+    .filter-btn{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--white);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+    .filter-btn.active{background:var(--green);color:white;border-color:var(--green);}
+    .filter-btn.arret-filter.active{background:var(--red-dark);color:white;border-color:var(--red-dark);}
+
+    /* SAISIE CARD PROD */
+    .saisie-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--green-light);}
+    .saisie-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+    .saisie-heure{font-size:15px;font-weight:700;}
+    .saisie-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+    .saisie-debits{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+    .saisie-debit-box{border-radius:8px;padding:10px 12px;}
+    .saisie-debit-box.lav{background:#e8f5e8;}
+    .saisie-debit-box.sec{background:var(--amber-pale);}
+    .saisie-debit-label{font-size:10px;font-weight:700;margin-bottom:4px;}
+    .saisie-debit-label.lav{color:var(--green-mid);}
+    .saisie-debit-label.sec{color:#7a4d08;}
+    .saisie-debit-val{font-size:20px;font-weight:700;}
+    .saisie-debit-val.lav{color:var(--green-mid);}
+    .saisie-debit-val.sec{color:var(--amber);}
+    .saisie-debit-unit{font-size:11px;color:var(--muted);}
+    .lignes-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+    .pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;}
+    .pill.on{background:#e8f5e8;color:#2d5a2d;}
+    .pill.off{background:var(--red-pale);color:var(--red);}
+
+    /* ARRET CARD */
+    .arret-card{background:var(--white);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);}
+    .arret-card.en-cours{border-left:4px solid var(--red);}
+    .arret-card.termine{border-left:4px solid var(--green-light);}
+    .arret-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .arret-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;}
+    .arret-badge.en-cours{background:var(--red-pale);color:var(--red);}
+    .arret-badge.termine{background:#e8f5e8;color:var(--green-mid);}
+    .arret-date{font-size:11px;color:var(--muted);}
+    .arret-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+    .arret-info{background:#f8f8f6;border-radius:6px;padding:8px 10px;}
+    .arret-info-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;}
+    .arret-info-val{font-size:13px;font-weight:700;color:var(--text);}
+    .arret-duree-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:6px;margin-bottom:8px;}
+    .arret-duree-row.en-cours{background:var(--red-pale);}
+    .arret-duree-row.termine{background:#e8f5e8;}
+    .arret-duree-time{font-size:12px;color:var(--muted);}
+    .arret-duree-val{font-size:15px;font-weight:700;}
+    .arret-duree-row.en-cours .arret-duree-val{color:var(--red);}
+    .arret-duree-row.termine .arret-duree-val{color:var(--green-mid);}
+    .btn-fermer{width:100%;padding:10px;background:var(--green-mid);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;}
+    .en-cours-banner{background:var(--red-pale);border:1.5px solid #f0b0b0;border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+    .en-cours-txt{font-size:13px;font-weight:700;color:var(--red);}
+    .en-cours-nb{font-size:22px;font-weight:700;color:var(--red);}
+
+    .saisie-actions{display:flex;gap:8px;}
+    .btn-edit{flex:1;padding:8px;background:var(--amber-pale);color:#7a4d08;border:1.5px solid #f0c87a;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;}
+    .btn-delete{flex:1;padding:8px;background:var(--red-pale);color:var(--red);border:1.5px solid #f0b0b0;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;}
+
+    .empty{text-align:center;padding:40px 20px;color:var(--muted);}
+    .empty-icon{font-size:36px;display:block;margin-bottom:10px;opacity:0.3;}
+    .loading-msg{text-align:center;padding:30px;color:var(--muted);font-size:14px;}
+    .toast{display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);color:white;padding:13px 26px;border-radius:24px;font-size:14px;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.25);}
+    .toast.success{background:var(--green-mid);}
+    .toast.error{background:var(--red);}
+    .toast.info{background:#333;}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center;}
+    .modal-overlay.show{display:flex;}
+    .modal{background:var(--white);border-radius:var(--radius);padding:24px 20px;max-width:320px;width:90%;margin:20px;}
+    .modal-title{font-size:16px;font-weight:700;margin-bottom:8px;}
+    .modal-text{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:20px;}
+    .modal-actions{display:flex;gap:10px;}
+    .modal-cancel{flex:1;padding:11px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);}
+    .modal-confirm{flex:1;padding:11px;background:var(--red);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;}
+  </style>
+</head>
+<body>
+<div class="offline-bar" id="offline-bar">⚠ Hors ligne</div>
+<div class="header">
+  <h1>⚙️ Saisie Production</h1>
+  <p>OCP — Laverie &amp; Séchage</p>
+  <div class="tabs">
+    <div class="tab active"      onclick="switchTab('prod')">📋 Production</div>
+    <div class="tab arret-tab"   onclick="switchTab('arret')">🛑 Arrêts</div>
+    <div class="tab"             onclick="switchTab('historique')">📁 Historique</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════════
+       ONGLET 1 — PRODUCTION
+  ══════════════════════════════════════════ -->
+  <div class="section active" id="section-prod">
+    <div class="edit-banner" id="edit-banner-prod">
+      <div class="edit-banner-title">✏️ Mode modification — Production</div>
+      <div class="edit-banner-sub">Modifie les valeurs puis clique sur "Enregistrer".</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Identification</div>
+      <div class="form-group">
+        <label class="form-label">Poste</label>
+        <select id="p-quart">
+          <option value="">— Sélectionner —</option>
+          <option>P1</option><option>P2</option><option>P3</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Heure de relevé</label>
+        <input type="text" id="p-heure" placeholder="ex: 07:05"/>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Laverie — Totalisateurs</div>
+      <div class="form-hint">Débit = Heure J − Heure J-1</div>
+      <div class="tot-row">
+        <div class="tot-box">
+          <div class="tot-box-label">Heure J-1</div>
+          <input type="number" id="lav-j1" placeholder="valeur précédente" min="0" step="1" oninput="calcDebit('lav')"/>
+        </div>
+        <div class="tot-box j">
+          <div class="tot-box-label">Heure J ←</div>
+          <input type="number" id="lav-j" placeholder="valeur actuelle" min="0" step="1" oninput="calcDebit('lav')"/>
+        </div>
+      </div>
+      <div class="debit-result lav" id="dr-lav">
+        <div class="debit-result-label">Débit Laverie</div>
+        <div class="debit-val" id="dv-lav">—</div>
+        <div class="debit-unit">tonnes / heure</div>
+      </div>
+      <div class="debit-error" id="de-lav">⚠ J doit être supérieur à J-1</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Séchage — Totalisateurs</div>
+      <div class="form-hint">Débit = Heure J − Heure J-1</div>
+      <div class="tot-row">
+        <div class="tot-box">
+          <div class="tot-box-label">Heure J-1</div>
+          <input type="number" id="sec-j1" placeholder="valeur précédente" min="0" step="1" oninput="calcDebit('sec')"/>
+        </div>
+        <div class="tot-box j">
+          <div class="tot-box-label">Heure J ←</div>
+          <input type="number" id="sec-j" placeholder="valeur actuelle" min="0" step="1" oninput="calcDebit('sec')"/>
+        </div>
+      </div>
+      <div class="debit-result sec" id="dr-sec">
+        <div class="debit-result-label">Débit Séchage</div>
+        <div class="debit-val" id="dv-sec">—</div>
+        <div class="debit-unit">tonnes / heure</div>
+      </div>
+      <div class="debit-error" id="de-sec">⚠ J doit être supérieur à J-1</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Lignes en marche</div>
+      <div class="lignes-count" id="lignes-count">6 / 6</div>
+      <div class="lignes-label">Appuyer pour basculer marche / arrêt</div>
+      <div class="ligne-grid" id="lignes-grid"></div>
+    </div>
+
+    <button class="btn-submit prod" id="btn-prod" onclick="soumettreProduction()">Envoyer la saisie →</button>
+    <button class="btn-cancel" id="btn-cancel-prod" style="display:none" onclick="cancelEditProd()">Annuler</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       ONGLET 2 — ARRÊTS
+  ══════════════════════════════════════════ -->
+  <div class="section" id="section-arret">
+    <div class="edit-banner" id="edit-banner-arret">
+      <div class="edit-banner-title">✏️ Mode modification — Arrêt</div>
+      <div class="edit-banner-sub">Modifie les informations puis clique sur "Enregistrer".</div>
+    </div>
+
+    <div class="card arret-card-form">
+      <div class="card-title">Localisation de l'arrêt</div>
+      <div class="form-group">
+        <label class="form-label">Unité</label>
+        <select id="a-unite" onchange="onUniteChange()">
+          <option value="">— Sélectionner —</option>
+          <option value="Laverie">Laverie</option>
+          <option value="Séchage">Séchage</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ligne</label>
+        <select id="a-ligne">
+          <option value="">— Sélectionner —</option>
+          <option>L3</option><option>L4</option><option>L5</option>
+          <option>L6</option><option>L7</option><option>L8</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Système</label>
+        <select id="a-systeme" disabled>
+          <option value="">— Choisir une unité d'abord —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Équipement</label>
+        <select id="a-equipement">
+          <option value="">— Sélectionner —</option>
+          <option>Pompe de pulpe</option>
+          <option>P14</option>
+          <option>P13</option>
+          <option>Hydrocyclones</option>
+          <option>FAB</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description / Cause</label>
+        <textarea id="a-description" placeholder="Décrire la cause de l'arrêt, nature de l'intervention..." style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;resize:none;height:80px;line-height:1.5;background:var(--white);color:var(--text);"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Horaires</div>
+      <div class="heure-row">
+        <div class="heure-box debut">
+          <div class="heure-box-label">🔴 Début</div>
+          <input type="text" id="a-debut" placeholder="07:15"/>
+        </div>
+        <div class="heure-box fin">
+          <div class="heure-box-label">🟢 Fin</div>
+          <input type="text" id="a-fin" placeholder="optionnel" oninput="calcDuree()"/>
+        </div>
+      </div>
+      <div class="heure-hint">La fin peut être saisie plus tard à la clôture.</div>
+      <div class="duree-preview en-cours" id="duree-en-cours" style="display:none">⏳ Arrêt en cours</div>
+      <div class="duree-preview termine" id="duree-termine" style="display:none"></div>
+    </div>
+
+    <button class="btn-submit arret" id="btn-arret" onclick="soumettreArret()">🛑 Déclarer l'arrêt</button>
+    <button class="btn-cancel" id="btn-cancel-arret" style="display:none" onclick="cancelEditArret()">Annuler</button>
+
+    <!-- ARRÊTS EN COURS — visible depuis l'onglet Arrêts -->
+    <div style="margin-top:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+        🔴 Arrêts en cours (tous postes)
+        <span id="badge-ouverts" style="background:var(--red);color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;display:none">0</span>
+      </div>
+      <div id="arrets-ouverts-list"><div class="loading-msg" style="padding:16px">Chargement...</div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       ONGLET 3 — HISTORIQUE
+  ══════════════════════════════════════════ -->
+  <div class="section" id="section-historique">
+
+    <!-- Sous-onglets prod / arrêts -->
+    <div class="hist-tabs">
+      <div class="hist-tab active" id="ht-prod" onclick="switchHist('prod')">📋 Productions</div>
+      <div class="hist-tab arret-tab" id="ht-arret" onclick="switchHist('arret')">🛑 Mes arrêts</div>
+    </div>
+
+    <!-- LISTE PRODUCTIONS -->
+    <div id="hist-prod-content">
+      <div class="filter-row">
+        <div class="filter-btn active" onclick="setFilterProd('tous',this)">Toutes</div>
+        <div class="filter-btn" onclick="setFilterProd('aujourd-hui',this)">Aujourd'hui</div>
+        <div class="filter-btn" onclick="setFilterProd('semaine',this)">Cette semaine</div>
+      </div>
+      <div id="prod-list"><div class="loading-msg">Chargement...</div></div>
+    </div>
+
+    <!-- LISTE ARRÊTS -->
+    <div id="hist-arret-content" style="display:none">
+      <div class="filter-row">
+        <div class="filter-btn arret-filter active" onclick="setFilterArret('tous',this)">Tous</div>
+        <div class="filter-btn arret-filter" onclick="setFilterArret('en-cours',this)">⏳ En cours</div>
+        <div class="filter-btn arret-filter" onclick="setFilterArret('termine',this)">✅ Terminés</div>
+        <div class="filter-btn arret-filter" onclick="setFilterArret('aujourd-hui',this)">Aujourd'hui</div>
+      </div>
+      <div id="arret-list"><div class="loading-msg">Chargement...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Supprimer ?</div>
+    <div class="modal-text">Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc,
+         query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyAPLYEhvDGHAFRINZSFKa3Rt51lw3qL4MQ",
+  authDomain:"handling-651aa.firebaseapp.com",
+  projectId:"handling-651aa",
+  storageBucket:"handling-651aa.firebasestorage.app",
+  messagingSenderId:"488738709591",
+  appId:"1:488738709591:web:847cd29989a22881dfc312"
+});
+const db = getFirestore(app);
+
+const LIGNES = ['L3','L4','L5','L6','L7','L8'];
+const SYSTEMES = { 'Laverie':['Classification','Filtration'], 'Séchage':['Dépression','Coude'] };
+const lignesState = {};
+LIGNES.forEach(l => lignesState[l] = true);
+
+let mesSaisies    = [];
+let mesArrets     = [];
+let editingProdId = null;
+let editingArretId = null;
+let deletingId    = null;
+let deleteType    = null;
+let filterProd    = 'tous';
+let filterArret   = 'tous';
+let histView      = 'prod';
+
+// ── LIGNES GRID ──────────────────────────────────────────────────────────
+const grid = document.getElementById('lignes-grid');
+LIGNES.forEach(nom => {
+  const btn = document.createElement('div');
+  btn.className = 'ligne-btn on';
+  btn.textContent = nom;
+  btn.dataset.nom = nom;
+  btn.onclick = () => {
+    lignesState[nom] = !lignesState[nom];
+    btn.className = 'ligne-btn '+(lignesState[nom]?'on':'off');
+    document.getElementById('lignes-count').textContent =
+      Object.values(lignesState).filter(Boolean).length+' / 6';
+  };
+  grid.appendChild(btn);
+});
+
+// Heure auto
+function heureNow() {
+  const n=new Date();
+  return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+}
+document.getElementById('p-heure').value = heureNow();
+document.getElementById('a-debut').value = heureNow();
+
+// ── TABS PRINCIPAL ───────────────────────────────────────────────────────
+window.switchTab = tab => {
+  document.querySelectorAll('.tab').forEach((t,i)=>
+    t.classList.toggle('active',['prod','arret','historique'][i]===tab));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('section-'+tab).classList.add('active');
+  if(tab==='historique'){ loadAll(); }
+};
+
+// ── TABS HISTORIQUE ──────────────────────────────────────────────────────
+window.switchHist = view => {
+  histView = view;
+  document.getElementById('ht-prod').classList.toggle('active', view==='prod');
+  document.getElementById('ht-arret').classList.toggle('active', view==='arret');
+  document.getElementById('hist-prod-content').style.display = view==='prod'?'block':'none';
+  document.getElementById('hist-arret-content').style.display = view==='arret'?'block':'none';
+};
+
+// ── TOAST ────────────────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type;
+  t.style.display='block'; setTimeout(()=>t.style.display='none',3000);
+}
+
+// ── CALCUL DÉBIT ─────────────────────────────────────────────────────────
+window.calcDebit = type => {
+  const j1=parseFloat(document.getElementById(type+'-j1').value);
+  const j =parseFloat(document.getElementById(type+'-j').value);
+  const dr=document.getElementById('dr-'+type);
+  const dv=document.getElementById('dv-'+type);
+  const de=document.getElementById('de-'+type);
+  if(isNaN(j1)||isNaN(j)){dr.style.display='none';de.style.display='none';return;}
+  if(j<j1){dr.style.display='none';de.style.display='block';return;}
+  de.style.display='none';
+  dv.textContent=(j-j1).toLocaleString('fr-FR');
+  dr.style.display='block';
+};
+
+// ── CALCUL DURÉE ARRÊT ───────────────────────────────────────────────────
+window.calcDuree = () => {
+  const debut=document.getElementById('a-debut').value.trim();
+  const fin  =document.getElementById('a-fin').value.trim();
+  const ec=document.getElementById('duree-en-cours');
+  const te=document.getElementById('duree-termine');
+  if(!debut){ec.style.display='none';te.style.display='none';return;}
+  if(!fin){ec.style.display='block';te.style.display='none';return;}
+  const d=calcMinutes(debut,fin);
+  if(d===null||d<0){ec.style.display='block';te.style.display='none';return;}
+  ec.style.display='none';
+  te.textContent='✅ Durée : '+formatDuree(d);
+  te.style.display='block';
+};
+
+function calcMinutes(d,f) {
+  const[dh,dm]=d.split(':').map(Number);
+  const[fh,fm]=f.split(':').map(Number);
+  if([dh,dm,fh,fm].some(isNaN)) return null;
+  let diff=(fh*60+fm)-(dh*60+dm);
+  if(diff<0) diff+=24*60;
+  return diff;
+}
+function formatDuree(m){ return m<60?m+' min':Math.floor(m/60)+'h'+(m%60>0?' '+m%60+'min':''); }
+
+// ── CASCADE SYSTEME ──────────────────────────────────────────────────────
+window.onUniteChange = () => {
+  const unite=document.getElementById('a-unite').value;
+  const sel=document.getElementById('a-systeme');
+  sel.innerHTML='<option value="">— Sélectionner —</option>';
+  if(unite&&SYSTEMES[unite]){
+    SYSTEMES[unite].forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;sel.appendChild(o);});
+    sel.disabled=false;
+  } else { sel.innerHTML='<option value="">— Choisir une unité d\'abord —</option>'; sel.disabled=true; }
+};
+
+// ── SOUMETTRE PRODUCTION ─────────────────────────────────────────────────
+window.soumettreProduction = async () => {
+  const quart=document.getElementById('p-quart').value;
+  const heure=document.getElementById('p-heure').value.trim();
+  const lavJ1=parseFloat(document.getElementById('lav-j1').value);
+  const lavJ =parseFloat(document.getElementById('lav-j').value);
+  const secJ1=parseFloat(document.getElementById('sec-j1').value);
+  const secJ =parseFloat(document.getElementById('sec-j').value);
+  if(!quart)       return toast('⚠ Sélectionner le poste','error');
+  if(!heure)       return toast('⚠ Entrer l\'heure','error');
+  if(isNaN(lavJ1)||isNaN(lavJ)) return toast('⚠ Totalisateurs Laverie incomplets','error');
+  if(isNaN(secJ1)||isNaN(secJ)) return toast('⚠ Totalisateurs Séchage incomplets','error');
+  if(lavJ<lavJ1)   return toast('⚠ Laverie J < J-1','error');
+  if(secJ<secJ1)   return toast('⚠ Séchage J < J-1','error');
+
+  const debitLav=lavJ-lavJ1, debitSec=secJ-secJ1;
+  const lignesEnMarche=LIGNES.filter(l=>lignesState[l]);
+  const today=new Date().toLocaleDateString('fr-FR');
+  const todaySaisies=mesSaisies.filter(s=>s.date===today&&s.id!==editingProdId);
+  const cumulLav=todaySaisies.reduce((s,r)=>s+(r.debitLaverie||0),0)+debitLav;
+  const cumulSec=todaySaisies.reduce((s,r)=>s+(r.debitSechage||0),0)+debitSec;
+
+  const payload={quart,heure,totLaverieJ1:lavJ1,totLaverieJ:lavJ,debitLaverie:debitLav,
+    totSechageJ1:secJ1,totSechageJ:secJ,debitSechage:debitSec,
+    cumulLaverie:cumulLav,cumulSechage:cumulSec,
+    lignesEnMarche,nbLignes:lignesEnMarche.length,
+    date:today,dateISO:new Date().toISOString().split('T')[0]};
+
+  const btn=document.getElementById('btn-prod');
+  btn.disabled=true; btn.textContent='Envoi...';
+  try {
+    if(editingProdId){
+      await updateDoc(doc(db,'prod_saisies',editingProdId),{...payload,modifiedAt:serverTimestamp()});
+      toast('✓ Saisie modifiée !','success'); cancelEditProd();
+    } else {
+      await addDoc(collection(db,'prod_saisies'),{...payload,timestamp:serverTimestamp()});
+      toast('✓ Saisie enregistrée !','success'); resetProd();
+    }
+    await loadAll();
+  } catch(e){toast('❌ Erreur connexion','error');console.error(e);}
+  finally{btn.disabled=false;btn.textContent=editingProdId?'Enregistrer':'Envoyer la saisie →';}
+};
+
+function resetProd(){
+  document.getElementById('p-quart').value='';
+  ['lav-j1','lav-j','sec-j1','sec-j'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-heure').value=heureNow();
+  LIGNES.forEach(l=>lignesState[l]=true);
+  document.querySelectorAll('.ligne-btn').forEach(b=>b.className='ligne-btn on');
+  document.getElementById('lignes-count').textContent='6 / 6';
+  ['lav','sec'].forEach(t=>{document.getElementById('dr-'+t).style.display='none';document.getElementById('de-'+t).style.display='none';});
+}
+window.cancelEditProd=()=>{
+  editingProdId=null;
+  document.getElementById('edit-banner-prod').style.display='none';
+  document.getElementById('btn-prod').textContent='Envoyer la saisie →';
+  document.getElementById('btn-cancel-prod').style.display='none';
+  resetProd();
+};
+
+// ── SOUMETTRE ARRÊT ──────────────────────────────────────────────────────
+window.soumettreArret = async () => {
+  const unite=document.getElementById('a-unite').value;
+  const ligne=document.getElementById('a-ligne').value;
+  const systeme=document.getElementById('a-systeme').value;
+  const equip=document.getElementById('a-equipement').value;
+  const debut=document.getElementById('a-debut').value.trim();
+  const fin=document.getElementById('a-fin').value.trim();
+  if(!unite)   return toast('⚠ Sélectionner l\'unité','error');
+  if(!ligne)   return toast('⚠ Sélectionner la ligne','error');
+  if(!systeme) return toast('⚠ Sélectionner le système','error');
+  if(!equip)   return toast('⚠ Sélectionner l\'équipement','error');
+  if(!debut)   return toast('⚠ Entrer l\'heure de début','error');
+
+  const description=document.getElementById('a-description').value.trim();
+  const estTermine=fin.length>0;
+  const dureeMin=estTermine?calcMinutes(debut,fin):null;
+  const payload={unite,ligne,systeme,equipement:equip,description,heureDebut:debut,heureFin:fin,
+    estTermine,dureeMinutes:dureeMin,
+    date:new Date().toLocaleDateString('fr-FR'),dateISO:new Date().toISOString().split('T')[0]};
+
+  const btn=document.getElementById('btn-arret');
+  btn.disabled=true; btn.textContent='Envoi...';
+  try {
+    if(editingArretId){
+      await updateDoc(doc(db,'arrets',editingArretId),{...payload,modifiedAt:serverTimestamp()});
+      toast('✓ Arrêt modifié !','success'); cancelEditArret();
+    } else {
+      await addDoc(collection(db,'arrets'),{...payload,timestamp:serverTimestamp()});
+      toast('✓ Arrêt déclaré !','success'); resetArret();
+    }
+    await loadAll();
+  } catch(e){toast('❌ Erreur connexion','error');console.error(e);}
+  finally{btn.disabled=false;btn.textContent=editingArretId?'Enregistrer':'🛑 Déclarer l\'arrêt';}
+};
+
+function resetArret(){
+  document.getElementById('a-unite').value='';
+  document.getElementById('a-ligne').value='';
+  document.getElementById('a-systeme').innerHTML='<option value="">— Choisir une unité d\'abord —</option>';
+  document.getElementById('a-systeme').disabled=true;
+  document.getElementById('a-equipement').value='';
+  document.getElementById('a-description').value='';
+  document.getElementById('a-fin').value='';
+  document.getElementById('a-debut').value=heureNow();
+  document.getElementById('duree-en-cours').style.display='none';
+  document.getElementById('duree-termine').style.display='none';
+}
+window.cancelEditArret=()=>{
+  editingArretId=null;
+  document.getElementById('edit-banner-arret').style.display='none';
+  document.getElementById('btn-arret').textContent='🛑 Déclarer l\'arrêt';
+  document.getElementById('btn-cancel-arret').style.display='none';
+  resetArret();
+};
+
+// ── FERMER ARRÊT ─────────────────────────────────────────────────────────
+window.fermerArret = id => {
+  const a=mesArrets.find(x=>x.id===id); if(!a) return;
+  const fin=prompt('Heure de fin d\'intervention (ex: 09:30) :');
+  if(!fin) return;
+  const d=calcMinutes(a.heureDebut,fin.trim());
+  updateDoc(doc(db,'arrets',id),{heureFin:fin.trim(),estTermine:true,dureeMinutes:d,modifiedAt:serverTimestamp()})
+    .then(()=>{toast('✅ Arrêt clôturé — '+(d!==null?formatDuree(d):'—'),'success');loadAll();})
+    .catch(()=>toast('❌ Erreur','error'));
+};
+
+// ── MODIFIER ─────────────────────────────────────────────────────────────
+window.editProd = id => {
+  const s=mesSaisies.find(x=>x.id===id); if(!s) return;
+  editingProdId=id;
+  document.getElementById('p-quart').value=s.quart||'';
+  document.getElementById('p-heure').value=s.heure||'';
+  document.getElementById('lav-j1').value=s.totLaverieJ1||'';
+  document.getElementById('lav-j').value=s.totLaverieJ||'';
+  document.getElementById('sec-j1').value=s.totSechageJ1||'';
+  document.getElementById('sec-j').value=s.totSechageJ||'';
+  LIGNES.forEach(l=>lignesState[l]=(s.lignesEnMarche||[]).includes(l));
+  document.querySelectorAll('.ligne-btn').forEach(b=>b.className='ligne-btn '+(lignesState[b.dataset.nom]?'on':'off'));
+  document.getElementById('lignes-count').textContent=LIGNES.filter(l=>lignesState[l]).length+' / 6';
+  calcDebit('lav'); calcDebit('sec');
+  document.getElementById('edit-banner-prod').style.display='block';
+  document.getElementById('btn-prod').textContent='Enregistrer les modifications';
+  document.getElementById('btn-cancel-prod').style.display='block';
+  switchTab('prod'); window.scrollTo({top:0,behavior:'smooth'});
+};
+
+window.editArret = id => {
+  const a=mesArrets.find(x=>x.id===id); if(!a) return;
+  editingArretId=id;
+  document.getElementById('a-unite').value=a.unite||''; onUniteChange();
+  document.getElementById('a-ligne').value=a.ligne||'';
+  document.getElementById('a-systeme').value=a.systeme||'';
+  document.getElementById('a-equipement').value=a.equipement||'';
+  document.getElementById('a-description').value=a.description||'';
+  document.getElementById('a-debut').value=a.heureDebut||'';
+  document.getElementById('a-fin').value=a.heureFin||'';
+  calcDuree();
+  document.getElementById('edit-banner-arret').style.display='block';
+  document.getElementById('btn-arret').textContent='Enregistrer les modifications';
+  document.getElementById('btn-cancel-arret').style.display='block';
+  switchTab('arret'); window.scrollTo({top:0,behavior:'smooth'});
+};
+
+// ── DELETE ───────────────────────────────────────────────────────────────
+window.askDelete=(id,type)=>{deletingId=id;deleteType=type;document.getElementById('modal-overlay').classList.add('show');};
+window.closeModal=()=>{deletingId=null;deleteType=null;document.getElementById('modal-overlay').classList.remove('show');};
+window.confirmDelete=async()=>{
+  if(!deletingId) return; closeModal();
+  const col=deleteType==='prod'?'prod_saisies':'arrets';
+  try{
+    await deleteDoc(doc(db,col,deletingId));
+    if(deleteType==='prod') mesSaisies=mesSaisies.filter(s=>s.id!==deletingId);
+    else mesArrets=mesArrets.filter(a=>a.id!==deletingId);
+    renderProd(); renderArrets();
+    toast('✓ Supprimé','success');
+  }catch(e){toast('❌ Erreur','error');}
+};
+
+// ── LOAD ─────────────────────────────────────────────────────────────────
+async function loadAll(){
+  try{
+    const[sp,sa]=await Promise.all([
+      getDocs(query(collection(db,'prod_saisies'),orderBy('timestamp','desc'))),
+      getDocs(query(collection(db,'arrets'),orderBy('timestamp','desc')))
+    ]);
+    mesSaisies=sp.docs.map(d=>({id:d.id,...d.data()}));
+    mesArrets =sa.docs.map(d=>({id:d.id,...d.data()}));
+    renderProd(); renderArrets(); renderArretsOuverts();
+  }catch(e){console.error(e);}
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────
+window.setFilterProd=(f,el)=>{
+  filterProd=f;
+  document.querySelectorAll('#hist-prod-content .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderProd();
+};
+window.setFilterArret=(f,el)=>{
+  filterArret=f;
+  document.querySelectorAll('#hist-arret-content .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderArrets();
+};
+
+// ── RENDER PROD ───────────────────────────────────────────────────────────
+function renderProd(){
+  const today=new Date().toLocaleDateString('fr-FR');
+  const weekAgo=new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  let filtered=mesSaisies;
+  if(filterProd==='aujourd-hui') filtered=mesSaisies.filter(s=>s.date===today);
+  else if(filterProd==='semaine') filtered=mesSaisies.filter(s=>{
+    if(!s.timestamp) return false;
+    const ts=s.timestamp.toDate?s.timestamp.toDate():new Date(s.timestamp);
+    return ts>=weekAgo;
+  });
+  const list=document.getElementById('prod-list');
+  if(!filtered.length){list.innerHTML='<div class="empty"><span class="empty-icon">📭</span>Aucune saisie</div>';return;}
+  list.innerHTML=filtered.map(s=>`
+    <div class="saisie-card">
+      <div class="saisie-top">
+        <div><div class="saisie-heure">${s.heure||'—'}</div><div class="saisie-meta">${s.quart||'—'} · ${s.date||'—'}</div></div>
+      </div>
+      <div class="saisie-debits">
+        <div class="saisie-debit-box lav">
+          <div class="saisie-debit-label lav">Débit Laverie</div>
+          <div class="saisie-debit-val lav">${(s.debitLaverie||0).toLocaleString('fr-FR')}</div>
+          <div class="saisie-debit-unit">t/h</div>
+        </div>
+        <div class="saisie-debit-box sec">
+          <div class="saisie-debit-label sec">Débit Séchage</div>
+          <div class="saisie-debit-val sec">${(s.debitSechage||0).toLocaleString('fr-FR')}</div>
+          <div class="saisie-debit-unit">t/h</div>
+        </div>
+      </div>
+      <div class="lignes-pills">
+        ${LIGNES.map(l=>`<span class="pill ${(s.lignesEnMarche||[]).includes(l)?'on':'off'}">${l}</span>`).join('')}
+      </div>
+      <div class="saisie-actions">
+        <button class="btn-edit" onclick="editProd('${s.id}')">✏️ Modifier</button>
+        <button class="btn-delete" onclick="askDelete('${s.id}','prod')">🗑 Supprimer</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── RENDER ARRÊTS ─────────────────────────────────────────────────────────
+function renderArrets(){
+  const today=new Date().toLocaleDateString('fr-FR');
+  const weekAgo=new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+
+  let filtered=mesArrets;
+  if(filterArret==='en-cours') filtered=mesArrets.filter(a=>!a.estTermine);
+  else if(filterArret==='termine') filtered=mesArrets.filter(a=>a.estTermine);
+  else if(filterArret==='aujourd-hui') filtered=mesArrets.filter(a=>a.date===today);
+
+  const list=document.getElementById('arret-list');
+  if(!filtered.length){list.innerHTML='<div class="empty"><span class="empty-icon">✅</span>Aucun arrêt</div>';return;}
+  list.innerHTML=filtered.map(a=>{
+    const cls=a.estTermine?'termine':'en-cours';
+    const badgeTxt=a.estTermine?'✅ Terminé':'⏳ En cours';
+    const dureeStr=a.dureeMinutes!=null?formatDuree(a.dureeMinutes):'En cours...';
+    return `
+    <div class="arret-card ${cls}">
+      <div class="arret-top">
+        <span class="arret-badge ${cls}">${badgeTxt}</span>
+        <span class="arret-date">${a.date||'—'}</span>
+      </div>
+      <div class="arret-info-grid">
+        <div class="arret-info"><div class="arret-info-label">Unité</div><div class="arret-info-val">${a.unite||'—'}</div></div>
+        <div class="arret-info"><div class="arret-info-label">Ligne</div><div class="arret-info-val">${a.ligne||'—'}</div></div>
+        <div class="arret-info"><div class="arret-info-label">Système</div><div class="arret-info-val">${a.systeme||'—'}</div></div>
+        <div class="arret-info"><div class="arret-info-label">Équipement</div><div class="arret-info-val">${a.equipement||'—'}</div></div>
+      </div>
+      <div class="arret-duree-row ${cls}">
+        <span class="arret-duree-time">🕐 ${a.heureDebut||'—'} → ${a.heureFin||'?'}</span>
+        <span class="arret-duree-val">${dureeStr}</span>
+      </div>
+      ${a.description?`<div style="font-size:13px;color:var(--muted);padding:8px 10px;background:#f8f8f6;border-radius:6px;margin-bottom:8px;line-height:1.5">📝 ${a.description}</div>`:''}
+      ${!a.estTermine?`<button class="btn-fermer" onclick="fermerArret('${a.id}')">✅ Clôturer l'arrêt</button>`:''}
+      <div class="saisie-actions">
+        <button class="btn-edit" onclick="editArret('${a.id}')">✏️ Modifier</button>
+        <button class="btn-delete" onclick="askDelete('${a.id}','arret')">🗑 Supprimer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ARRÊTS OUVERTS — TOUS QUARTS ─────────────────────────────────────────
+function renderArretsOuverts(){
+  const ouverts = mesArrets.filter(a => !a.estTermine);
+  const badge   = document.getElementById('badge-ouverts');
+  const list    = document.getElementById('arrets-ouverts-list');
+
+  if(ouverts.length === 0){
+    badge.style.display = 'none';
+    list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius)">✅ Aucun arrêt en cours</div>`;
+    return;
+  }
+
+  badge.style.display = 'inline-block';
+  badge.textContent   = ouverts.length;
+
+  list.innerHTML = ouverts.map(a => `
+    <div style="background:var(--white);border:1px solid #f0b0b0;border-left:4px solid var(--red);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:700">${a.unite||'—'} · ${a.ligne||'—'}</div>
+        <div style="font-size:11px;background:var(--red-pale);color:var(--red);font-weight:700;padding:3px 9px;border-radius:10px">⏳ OUVERT</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:#f8f8f6;border-radius:6px;padding:7px 10px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Système</div>
+          <div style="font-size:13px;font-weight:700">${a.systeme||'—'}</div>
+        </div>
+        <div style="background:#f8f8f6;border-radius:6px;padding:7px 10px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px">Équipement</div>
+          <div style="font-size:13px;font-weight:700">${a.equipement||'—'}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--red);font-weight:600;margin-bottom:${a.description?'6px':'10px'}">
+        🕐 Début : ${a.heureDebut||'—'} · ${a.date||'—'}
+      </div>
+      ${a.description?`<div style="font-size:12px;color:var(--muted);padding:7px 10px;background:#f8f8f6;border-radius:6px;margin-bottom:10px;line-height:1.4">📝 ${a.description}</div>`:''}
+      <button class="btn-fermer" onclick="fermerArret('${a.id}')">✅ Clôturer cet arrêt</button>
+    </div>`).join('');
+}
+
+window.addEventListener('offline',()=>document.getElementById('offline-bar').style.display='block');
+window.addEventListener('online',()=>document.getElementById('offline-bar').style.display='none');
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+loadAll();
+</script>
+</body>
+</html>
